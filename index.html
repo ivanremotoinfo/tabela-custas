@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabela de Custas por Estado | SuporteADV</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d0d0d; color: #e0e0e0; padding: 24px 16px; }
+  .container { max-width: 860px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #222; }
+  h1 { font-size: 1.5rem; color: #008080; margin-bottom: 6px; }
+  .subtitle { font-size: 0.88rem; color: #888; line-height: 1.5; }
+  .brand { font-size: 0.78rem; margin-top: 8px; color: #555; }
+  .brand span.s { color: #8B00FF; font-weight: 700; }
+  .brand span.a { color: #008080; font-weight: 700; }
+
+  .info-box { background: #0d1a1a; border: 1px solid #1a3a3a; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 0.82rem; color: #666; line-height: 1.6; }
+  .info-box b { color: #008080; }
+
+  /* Calculadora de estimativa */
+  .calc-wrap { background: #111; border-radius: 10px; border: 1px solid #222; border-left: 3px solid #8B00FF; padding: 20px 22px; margin-bottom: 14px; }
+  .calc-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #008080; font-weight: 700; margin-bottom: 14px; }
+  .calc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  @media (max-width: 560px) { .calc-grid { grid-template-columns: 1fr 1fr; } }
+  .field label { display: block; font-size: 0.78rem; color: #888; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .field input, .field select { width: 100%; padding: 9px 11px; border: 1.5px solid #333; border-radius: 6px; font-size: 0.92rem; color: #fff; background: #1a1a1a; transition: border-color 0.2s; }
+  .field input:focus, .field select:focus { outline: none; border-color: #008080; }
+  .field select option { background: #1a1a1a; }
+  button.calcular { background: #008080; color: #fff; border: none; padding: 9px 22px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
+  button.calcular:hover { background: #006666; }
+
+  /* Resultado calculadora */
+  .calc-resultado { display: none; background: #0a1a0a; border: 1px solid #1a4a1a; border-radius: 8px; padding: 14px 16px; margin-top: 12px; }
+  .calc-resultado.visible { display: block; }
+  .cr-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  @media (max-width: 560px) { .cr-grid { grid-template-columns: 1fr 1fr; } }
+  .cr-item label { display: block; font-size: 0.68rem; color: #555; text-transform: uppercase; margin-bottom: 3px; }
+  .cr-item .crv { font-size: 0.95rem; font-weight: 700; font-family: 'Courier New', monospace; color: #00ff00; }
+  .cr-item .crv.sec { color: #008080; font-size: 0.85rem; }
+
+  /* Filtros */
+  .filtros { background: #111; border-radius: 10px; border: 1px solid #222; padding: 14px 18px; margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .filtros input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1.5px solid #333; border-radius: 6px; font-size: 0.88rem; color: #fff; background: #1a1a1a; }
+  .filtros input:focus { outline: none; border-color: #008080; }
+  .filtros select { padding: 8px 12px; border: 1.5px solid #333; border-radius: 6px; font-size: 0.85rem; color: #fff; background: #1a1a1a; }
+  .filtros select:focus { outline: none; border-color: #008080; }
+  .filtros select option { background: #1a1a1a; }
+
+  /* Tabela */
+  .tabela-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 700px; }
+  thead th { text-align: left; color: #008080; padding: 10px 10px; border-bottom: 2px solid #1a3a3a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; background: #0a1a1a; cursor: pointer; user-select: none; white-space: nowrap; }
+  thead th:hover { color: #00ff00; }
+  tbody tr { border-bottom: 1px solid #1a1a1a; transition: background 0.1s; }
+  tbody tr:hover { background: #151515; }
+  tbody td { padding: 10px 10px; vertical-align: middle; }
+  tbody tr.destaque td { background: #0a1a0a; }
+  tbody tr.destaque td:first-child { color: #00ff00; font-weight: 700; }
+
+  .td-estado { color: #ccc; font-weight: 700; }
+  .td-uf { color: #555; font-size: 0.78rem; }
+  .td-pct { font-family: 'Courier New', monospace; font-weight: 700; color: #008080; }
+  .td-min { font-family: 'Courier New', monospace; color: #555; font-size: 0.78rem; }
+  .td-max { font-family: 'Courier New', monospace; color: #444; font-size: 0.78rem; }
+  .td-citacao { font-family: 'Courier New', monospace; color: #555; font-size: 0.78rem; }
+  .td-estimado { font-family: 'Courier New', monospace; font-weight: 700; color: #00ff00; }
+  .td-estimado.alto { color: #ffaa00; }
+  .td-estimado.baixo { color: #008080; }
+  .td-link a { color: #8B00FF; font-size: 0.72rem; text-decoration: none; }
+  .td-link a:hover { color: #aa44ff; text-decoration: underline; }
+
+  .sem-result { text-align: center; padding: 40px; color: #444; }
+  .aviso { font-size: 0.72rem; color: #444; margin-top: 14px; line-height: 1.5; text-align: center; }
+
+  /* Legenda */
+  .legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.72rem; color: #555; margin-bottom: 8px; }
+  .leg-item { display: flex; align-items: center; gap: 4px; }
+  .leg-dot { width: 10px; height: 10px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>Tabela de Custas por Estado</h1>
+    <p class="subtitle">Compare as taxas judiciárias, custas de citação e estimativas de custo inicial por tribunal estadual.</p>
+    <p class="brand"><span class="s">suporte</span><span class="a">ADV</span>.br — Ferramentas para Advogados</p>
+  </div>
+
+  <div class="info-box">
+    <b>Como funciona:</b> As custas judiciais variam por estado. A taxa judiciária é geralmente um percentual sobre o valor da causa, com valores mínimo e máximo fixados. Informe o valor da causa abaixo para ver a estimativa de custo em cada estado. Clique no nome da coluna para ordenar.
+  </div>
+
+  <!-- Calculadora -->
+  <div class="calc-wrap">
+    <div class="calc-label">🔢 Calcular estimativa por valor da causa</div>
+    <div class="calc-grid">
+      <div class="field">
+        <label>Valor da causa (R$)</label>
+        <input type="number" id="valorCausa" placeholder="Ex: 50000" step="0.01" min="0" oninput="calcularEstimativas()">
+      </div>
+      <div class="field">
+        <label>Nº de réus (citações)</label>
+        <input type="number" id="numReus" value="1" min="1" max="20" oninput="calcularEstimativas()">
+      </div>
+      <div class="field">
+        <label>Estado de interesse</label>
+        <select id="estadoFoco" onchange="calcularEstimativas()">
+          <option value="">Todos</option>
+          <option value="SP">São Paulo</option>
+          <option value="RJ">Rio de Janeiro</option>
+          <option value="MG">Minas Gerais</option>
+          <option value="BA">Bahia</option>
+          <option value="RS">Rio Grande do Sul</option>
+          <option value="PR">Paraná</option>
+          <option value="SC">Santa Catarina</option>
+          <option value="GO">Goiás</option>
+          <option value="PE">Pernambuco</option>
+          <option value="CE">Ceará</option>
+        </select>
+      </div>
+    </div>
+    <div class="calc-resultado" id="calc-resultado">
+      <div class="cr-grid" id="cr-grid"></div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filtros">
+    <input type="text" id="busca" placeholder="🔍 Buscar estado..." oninput="renderTabela()">
+    <select id="filtroRegiao" onchange="renderTabela()">
+      <option value="">Todas as regiões</option>
+      <option value="N">Norte</option>
+      <option value="NE">Nordeste</option>
+      <option value="CO">Centro-Oeste</option>
+      <option value="SE">Sudeste</option>
+      <option value="S">Sul</option>
+    </select>
+    <select id="filtroOrdem" onchange="renderTabela()">
+      <option value="estado">Ordenar por estado</option>
+      <option value="pct_asc">Menor taxa primeiro</option>
+      <option value="pct_desc">Maior taxa primeiro</option>
+      <option value="min_asc">Menor mínimo primeiro</option>
+    </select>
+  </div>
+
+  <div class="legenda">
+    <div class="leg-item"><div class="leg-dot" style="background:#00ff00"></div>Estimativa calculada</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#ffaa00"></div>Custo elevado (>R$3.000)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#008080"></div>Custo baixo (<R$500)</div>
+  </div>
+
+  <div class="tabela-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="ordenarCol('estado')">Estado / TJ ↕</th>
+          <th onclick="ordenarCol('uf')">UF</th>
+          <th onclick="ordenarCol('regiao')">Região</th>
+          <th onclick="ordenarCol('pct')">Taxa judiciária ↕</th>
+          <th onclick="ordenarCol('min')">Mínimo ↕</th>
+          <th onclick="ordenarCol('max')">Máximo ↕</th>
+          <th onclick="ordenarCol('citacao')">Citação ↕</th>
+          <th id="th-estimado">Estimativa*</th>
+          <th>Site do TJ</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="sem-result" id="sem-result" style="display:none">Nenhum estado encontrado.</div>
+
+  <p class="aviso">⚠️ Valores de referência — as tabelas de custas são atualizadas periodicamente pelos tribunais. Confirme sempre no site oficial do TJ antes do ajuizamento. * Estimativa calculada sobre o valor informado acima.</p>
+
+</div>
+
+<script>
+const estados = [
+  { estado:'São Paulo', uf:'SP', regiao:'SE', pct:0.02, min:75.84, max:85373.40, citacao:42.87, tj:'TJSP', site:'https://www.tjsp.jus.br' },
+  { estado:'Rio de Janeiro', uf:'RJ', regiao:'SE', pct:0.02, min:60.00, max:50000.00, citacao:55.00, tj:'TJRJ', site:'https://www.tjrj.jus.br' },
+  { estado:'Minas Gerais', uf:'MG', regiao:'SE', pct:0.015, min:45.00, max:30000.00, citacao:48.00, tj:'TJMG', site:'https://www.tjmg.jus.br' },
+  { estado:'Bahia', uf:'BA', regiao:'NE', pct:0.02, min:50.00, max:3000.00, citacao:50.00, tj:'TJBA', site:'https://www.tjba.jus.br' },
+  { estado:'Rio Grande do Sul', uf:'RS', regiao:'S', pct:0.02, min:55.00, max:20000.00, citacao:46.00, tj:'TJRS', site:'https://www.tjrs.jus.br' },
+  { estado:'Paraná', uf:'PR', regiao:'S', pct:0.02, min:50.00, max:25000.00, citacao:44.00, tj:'TJPR', site:'https://www.tjpr.jus.br' },
+  { estado:'Santa Catarina', uf:'SC', regiao:'S', pct:0.02, min:50.00, max:15000.00, citacao:42.00, tj:'TJSC', site:'https://www.tjsc.jus.br' },
+  { estado:'Goiás', uf:'GO', regiao:'CO', pct:0.02, min:45.00, max:10000.00, citacao:43.00, tj:'TJGO', site:'https://www.tjgo.jus.br' },
+  { estado:'Pernambuco', uf:'PE', regiao:'NE', pct:0.02, min:48.00, max:8000.00, citacao:45.00, tj:'TJPE', site:'https://www.tjpe.jus.br' },
+  { estado:'Ceará', uf:'CE', regiao:'NE', pct:0.02, min:45.00, max:7000.00, citacao:43.00, tj:'TJCE', site:'https://www.tjce.jus.br' },
+  { estado:'Espírito Santo', uf:'ES', regiao:'SE', pct:0.02, min:50.00, max:12000.00, citacao:44.00, tj:'TJES', site:'https://www.tjes.jus.br' },
+  { estado:'Mato Grosso', uf:'MT', regiao:'CO', pct:0.02, min:44.00, max:8000.00, citacao:42.00, tj:'TJMT', site:'https://www.tjmt.jus.br' },
+  { estado:'Mato Grosso do Sul', uf:'MS', regiao:'CO', pct:0.02, min:44.00, max:8000.00, citacao:42.00, tj:'TJMS', site:'https://www.tjms.jus.br' },
+  { estado:'Distrito Federal', uf:'DF', regiao:'CO', pct:0.015, min:50.00, max:15000.00, citacao:45.00, tj:'TJDFT', site:'https://www.tjdft.jus.br' },
+  { estado:'Maranhão', uf:'MA', regiao:'NE', pct:0.02, min:40.00, max:5000.00, citacao:40.00, tj:'TJMA', site:'https://www.tjma.jus.br' },
+  { estado:'Pará', uf:'PA', regiao:'N', pct:0.02, min:42.00, max:6000.00, citacao:41.00, tj:'TJPA', site:'https://www.tjpa.jus.br' },
+  { estado:'Amazonas', uf:'AM', regiao:'N', pct:0.02, min:42.00, max:5000.00, citacao:41.00, tj:'TJAM', site:'https://www.tjam.jus.br' },
+  { estado:'Piauí', uf:'PI', regiao:'NE', pct:0.02, min:38.00, max:4000.00, citacao:38.00, tj:'TJPI', site:'https://www.tjpi.jus.br' },
+  { estado:'Alagoas', uf:'AL', regiao:'NE', pct:0.02, min:38.00, max:4000.00, citacao:38.00, tj:'TJAL', site:'https://www.tjal.jus.br' },
+  { estado:'Rio Grande do Norte', uf:'RN', regiao:'NE', pct:0.02, min:40.00, max:4500.00, citacao:40.00, tj:'TJRN', site:'https://www.tjrn.jus.br' },
+  { estado:'Sergipe', uf:'SE', regiao:'NE', pct:0.02, min:38.00, max:4000.00, citacao:38.00, tj:'TJSE', site:'https://www.tjse.jus.br' },
+  { estado:'Paraíba', uf:'PB', regiao:'NE', pct:0.02, min:40.00, max:4500.00, citacao:40.00, tj:'TJPB', site:'https://www.tjpb.jus.br' },
+  { estado:'Tocantins', uf:'TO', regiao:'N', pct:0.02, min:40.00, max:5000.00, citacao:40.00, tj:'TJTO', site:'https://www.tjto.jus.br' },
+  { estado:'Rondônia', uf:'RO', regiao:'N', pct:0.02, min:38.00, max:4000.00, citacao:38.00, tj:'TJRO', site:'https://www.tjro.jus.br' },
+  { estado:'Acre', uf:'AC', regiao:'N', pct:0.02, min:35.00, max:3500.00, citacao:36.00, tj:'TJAC', site:'https://www.tjac.jus.br' },
+  { estado:'Roraima', uf:'RR', regiao:'N', pct:0.02, min:35.00, max:3000.00, citacao:35.00, tj:'TJRR', site:'https://www.tjrr.jus.br' },
+  { estado:'Amapá', uf:'AP', regiao:'N', pct:0.02, min:35.00, max:3000.00, citacao:35.00, tj:'TJAP', site:'https://www.tjap.jus.br' },
+];
+
+const regioes = { N:'Norte', NE:'Nordeste', CO:'Centro-Oeste', SE:'Sudeste', S:'Sul' };
+let ordemAtual = 'estado', ordemDir = 1;
+
+function fmtMoeda(v) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+
+function calcTaxa(e, valor) {
+  return Math.max(Math.min(valor * e.pct, e.max), e.min);
+}
+
+function calcularEstimativas() {
+  const valor = parseFloat(document.getElementById('valorCausa').value) || 0;
+  const numReus = parseInt(document.getElementById('numReus').value) || 1;
+  const estadoFoco = document.getElementById('estadoFoco').value;
+
+  if (valor <= 0) {
+    document.getElementById('calc-resultado').classList.remove('visible');
+    renderTabela();
+    return;
+  }
+
+  // Atualiza coluna estimativa
+  renderTabela(valor, numReus);
+
+  // Resultado resumido
+  const foco = estadoFoco ? estados.find(e => e.uf === estadoFoco) : null;
+  const alvo = foco || estados.find(e => e.uf === 'SP');
+  const taxa = calcTaxa(alvo, valor);
+  const cit = alvo.citacao * numReus;
+  const total = taxa + cit;
+
+  document.getElementById('cr-grid').innerHTML = `
+    <div class="cr-item"><label>${alvo.tj}</label><div class="crv">${fmtMoeda(total)}</div></div>
+    <div class="cr-item"><label>Taxa judiciária</label><div class="crv sec">${fmtMoeda(taxa)}</div></div>
+    <div class="cr-item"><label>Citação (${numReus}×)</label><div class="crv sec">${fmtMoeda(cit)}</div></div>
+    <div class="cr-item"><label>Alíquota efetiva</label><div class="crv sec">${((taxa/valor)*100).toFixed(2).replace('.',',')}%</div></div>`;
+  document.getElementById('calc-resultado').classList.add('visible');
+}
+
+function ordenarCol(col) {
+  if (ordemAtual === col) ordemDir *= -1;
+  else { ordemAtual = col; ordemDir = 1; }
+  renderTabela();
+}
+
+function renderTabela(valor=0, numReus=1) {
+  const busca = document.getElementById('busca').value.toLowerCase();
+  const regiao = document.getElementById('filtroRegiao').value;
+  const ordemSel = document.getElementById('filtroOrdem').value;
+  const v = valor || parseFloat(document.getElementById('valorCausa').value) || 0;
+  const nr = numReus || parseInt(document.getElementById('numReus').value) || 1;
+
+  let resultado = estados.filter(e => {
+    const matchBusca = !busca || e.estado.toLowerCase().includes(busca) || e.uf.toLowerCase().includes(busca);
+    const matchReg = !regiao || e.regiao === regiao;
+    return matchBusca && matchReg;
+  });
+
+  // Ordenação
+  const ordemMap = { estado:'estado', uf:'uf', regiao:'regiao', pct:'pct', min:'min', max:'max', citacao:'citacao' };
+  const col = ordemMap[ordemAtual] || 'estado';
+  resultado.sort((a,b) => {
+    if (ordemSel === 'pct_asc') return a.pct - b.pct;
+    if (ordemSel === 'pct_desc') return b.pct - a.pct;
+    if (ordemSel === 'min_asc') return a.min - b.min;
+    const va = a[col]; const vb = b[col];
+    if (typeof va === 'number') return (va-vb)*ordemDir;
+    return va.localeCompare(vb,'pt-BR')*ordemDir;
+  });
+
+  // Atualiza header estimativa
+  document.getElementById('th-estimado').textContent = v > 0 ? `Estimativa (${fmtMoeda(v)})` : 'Estimativa*';
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  const sem = document.getElementById('sem-result');
+
+  if (resultado.length === 0) { sem.style.display = ''; return; }
+  sem.style.display = 'none';
+
+  resultado.forEach(e => {
+    const taxa = calcTaxa(e, v);
+    const estimado = v > 0 ? taxa + e.citacao * nr : 0;
+    const estCls = estimado > 3000 ? 'alto' : estimado > 0 && estimado < 500 ? 'baixo' : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-estado">${e.estado}</td>
+      <td class="td-uf">${e.uf}</td>
+      <td style="color:#555;font-size:0.75rem">${regioes[e.regiao]}</td>
+      <td class="td-pct">${(e.pct*100).toFixed(1)}%</td>
+      <td class="td-min">${fmtMoeda(e.min)}</td>
+      <td class="td-max">${fmtMoeda(e.max)}</td>
+      <td class="td-citacao">${fmtMoeda(e.citacao)}</td>
+      <td class="td-estimado ${estCls}">${v > 0 ? fmtMoeda(estimado) : '—'}</td>
+      <td class="td-link"><a href="${e.site}" target="_blank">${e.tj} ↗</a></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+renderTabela();
+</script>
+</body>
+</html>
